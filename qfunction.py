@@ -1,5 +1,7 @@
 import chainer
 import chainerrl
+import chainer.functions as F
+import chainer.links as L
 import numpy as np
 #Q関数
 class QFunction(chainer.Chain):
@@ -9,8 +11,10 @@ class QFunction(chainer.Chain):
             l1=L.Linear(n_hidden_channels, n_hidden_channels),
             l2=L.Linear(n_hidden_channels, n_hidden_channels),
             l3=L.Linear(n_hidden_channels, n_actions))
+
     def __call__(self, x, test=False):
         #-1を扱うのでleaky_reluとした
+        print(x)
         h = F.leaky_relu(self.l0(x))
         h = F.leaky_relu(self.l1(h))
         h = F.leaky_relu(self.l2(h))
