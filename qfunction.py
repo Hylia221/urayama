@@ -14,7 +14,6 @@ class QFunction(chainer.Chain):
 
     def __call__(self, x, test=False):
         #-1を扱うのでleaky_reluとした
-        print(x)
         h = F.leaky_relu(self.l0(x))
         h = F.leaky_relu(self.l1(h))
         h = F.leaky_relu(self.l2(h))
