@@ -16,7 +16,7 @@ class RandomPlayer:
         else:
             self.kp.done=True
             self.kp.miss=True
-            self.kp.winner= self.player*-1
+            self.kp.winner= -1 if self.player == PLAYER1 else 1 
             return -1
             
     def random_defence_action_func(self):
@@ -47,7 +47,7 @@ class HumanPlayer:
         valid = False
         while not valid:
             try:
-                ans = input("Please choose 0-1 to Answer whether it is a lie(0) or true(1):")
+                ans = input("Please choose 0-1 to answer whether it is a lie(0) or true(1):")
                 ans = int(ans)
                 if ans == 0 or ans == 1 :
                     valid = True

@@ -20,6 +20,8 @@ class Kakerlakenpoker():
         self.p2_hand = np.array([self.p2_hand.count(x) for x in range(8)]).astype(np.float32)
         self.p1_field=np.zeros(8)
         self.p2_field=np.zeros(8)
+        # self.hand=np.array([[self.p1_hand.count(x) for x in range(8)],[self.p2_hand.count(x) for x in range(8)]],dtype=np.float32)
+        # self.field=np.array([[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0]])
         self.winner = None
         self.miss = False
         self.done = False
@@ -70,30 +72,41 @@ class Kakerlakenpoker():
                 return -1
         # return reward
     def step(self,off_act,def_act,turn):
+        is_turn_change = False
         true_card = np.int(off_act/8) 
         declaration_card = off_act%8 
+        print("True:",true_card)
         if turn == PLAYER1:
             if def_act==1:
-                if true_card == declaration_card:#当てた
-                    self.p2_field[true_card]+=1
-                else:#外れた
+                if true_card == declaration_card:#Player2が当てた
                     self.p1_field[true_card]+=1
+                    is_turn_change=False
+                else:#外れた
+                    self.p2_field[true_card]+=1
+                    is_turn_change=True
             elif def_act==0:
                 if true_card == declaration_card:#外れた
-                    self.p1_field[true_card]+=1
-                else:#当てた
                     self.p2_field[true_card]+=1
+                    is_turn_change=True
+                else:#当てた
+                    self.p1_field[true_card]+=1
+                    is_turn_change=False
         elif turn == PLAYER2:
             if def_act==1:
                 if true_card == declaration_card:#当てた
-                    self.p1_field[true_card]+=1
-                else:#外れた
                     self.p2_field[true_card]+=1
+                    is_turn_change=False
+                else:#外れた
+                    self.p1_field[true_card]+=1
+                    is_turn_change=True
             elif def_act==0:
                 if true_card == declaration_card:#外れた
-                    self.p2_field[true_card]+=1
-                else:#当てた
                     self.p1_field[true_card]+=1
+                    is_turn_change=True
+                else:#当てた
+                    self.p2_field[true_card]+=1
+                    is_turn_change=False
+        return is_turn_change
 
     def get_env(self):
         a1 = self.p1_hand.tolist()
@@ -129,6 +142,13 @@ class Kakerlakenpoker():
         print("player1's field:",self.p1_field)
         print("player2's hand:",self.p2_hand)
         print("player2's field:",self.p2_field)
+    
+    def show_vs_URAYAMA(self):
+        print("URAYAMA hand:",self.p1_hand)
+        print("URAYAMA field:",self.p1_field)
+        print("PLAYER hand:",self.p2_hand)
+        print("PLAYER field:",self.p2_field)
+        
 
 def main():
     kp = Kakerlakenpoker()
@@ -169,18 +189,27 @@ def main():
     # chainerrl.agent.load_npz_no_strict("defence_model3000",urayama_defence)
     urayama_offence.load("offence_model3000")
     urayama_defence.load("defence_model3000")
-
     offence_act = [urayama_offence.act,human_player.offence_act]
     defence_act = [urayama_defence.act,human_player.defence_act]
-    turn = PLAYER1 #0がurayama, 1がhuman
+    turn = PLAYER1 #PLAYER1がurayama, PLAYER2がhuman
     turn_count=1
     while not kp.done:
-        print("***Turn",turn_count,"***")
-        print(kp.show())
+        print("***Turn",str(turn_count),"***")
+        kp.show_vs_URAYAMA()
         off_act = offence_act[turn](kp.get_env().copy())
-        print("player"+turn+" declare "+off_act%8)
-        def_act = defence_act[turn](np.append(kp.get_env().copy(),off_act))
-        kp.step(off_act,def_act,turn)
+        off_act_vec = np.zeros(8,dtype = np.float32)
+        off_act_vec[off_act%8]=1
+        if turn==PLAYER1:
+            print("URAYAMA declare:"+str(off_act%8))
+        else :
+            print("Player declare:"+str(off_act%8))
+        def_act = defence_act[PLAYER2-turn](np.append(kp.get_env().copy(),off_act_vec))
+        ans = "True" if def_act==1 else "Lie"
+        if turn==PLAYER1:
+            print("Player answer:"+ans) 
+        else :
+            print("URAYAMA answer:"+ans)
+        is_turn_change = kp.step(off_act,def_act,turn)
         kp.check_winner()
         if kp.done is True:
             if kp.winner == 1:
@@ -191,6 +220,6 @@ def main():
                 print("Error")
             if kp.miss is True:
                 print("MISS")
-        turn = PLAYER1 if turn == PLAYER2 else PLAYER2 #ターンの交換
+        if is_turn_change : turn = PLAYER1 if turn == PLAYER2 else PLAYER2 #ターンの交換
         turn_count+=1
-# main()
+main()
