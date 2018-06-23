@@ -9,7 +9,7 @@ class RandomPlayer:
 
     def random_offence_action_func(self):
         self.random_count += 1
-        index = np.where(self.kp.p1_hand>0) if self.player == PLAYER1 else  np.where(self.kp.p2_hand>0) 
+        index = np.where(self.kp.hand[PLAYER1]>0) if self.player == PLAYER1 else  np.where(self.kp.hand[PLAYER2]>0) 
         if len(index[0]) > 0:
             act=np.random.choice(index[0])*8+np.random.choice(8)
             return act      

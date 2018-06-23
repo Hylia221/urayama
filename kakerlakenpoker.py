@@ -5,7 +5,6 @@ import qfunction as qf
 from functions import *
 import random
 import players
-
 #kakerlaken poker game board
 class Kakerlakenpoker():
     def reset(self):
@@ -14,141 +13,150 @@ class Kakerlakenpoker():
             for j in range(8):
                 deck.append(i)
         deck_tmp = random.sample(deck,54) #trash 10 cards
-        self.p1_hand = deck_tmp[:int(len(deck_tmp)/2)]
-        self.p1_hand = np.array([self.p1_hand.count(x) for x in range(8)]).astype(np.float32)
-        self.p2_hand = deck_tmp[int(len(deck_tmp)/2):]
-        self.p2_hand = np.array([self.p2_hand.count(x) for x in range(8)]).astype(np.float32)
-        self.p1_field=np.zeros(8)
-        self.p2_field=np.zeros(8)
-        # self.hand=np.array([[self.p1_hand.count(x) for x in range(8)],[self.p2_hand.count(x) for x in range(8)]],dtype=np.float32)
-        # self.field=np.array([[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0]])
+        p1_hand = deck_tmp[:int(len(deck_tmp)/2)]
+        p2_hand = deck_tmp[int(len(deck_tmp)/2):]
+        self.hand=np.array([[p1_hand.count(x) for x in range(8)],[p2_hand.count(x) for x in range(8)]],dtype=np.float32)
+        self.field=np.array([[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0]])
         self.winner = None
         self.miss = False
         self.done = False
 
-    def step_defence(self,off_act,def_act):
-        true_card = np.int(off_act/8) #相手が出したカード
-        declaration_card = off_act%8 #相手が宣言したカード
-        if def_act==1:
-            if true_card == declaration_card:#当てた
-                self.p2_field[true_card]+=1
-                self.p2_hand[np.random.choice(np.where(self.p2_hand>0)[0])] -= 1
-                return 1
-            else:#外れた
-                self.p1_field[true_card]+=1
-                return -1
-        elif def_act==0:
-            if true_card == declaration_card:#外れた
-                self.p1_field[true_card]+=1
-                return -1
-            else:#当てた
-                self.p2_field[true_card]+=1
-                self.p2_hand[np.random.choice(np.where(self.p2_hand>0)[0])]-=1
-                return 1
-        self.miss = True
-        self.done = True
-        return 0
+    # def step_defence(self,off_act,def_act):
+    #     true_card = np.int(off_act/8) #相手が出したカード
+    #     declaration_card = off_act%8 #相手が宣言したカード
+    #     if def_act==1:
+    #         if true_card == declaration_card:#当てた
+    #             self.p2_field[true_card]+=1
+    #             self.p2_hand[np.random.choice(np.where(self.p2_hand>0)[0])] -= 1
+    #             return 1
+    #         else:#外れた
+    #             self.p1_field[true_card]+=1
+    #             return -1
+    #     elif def_act==0:
+    #         if true_card == declaration_card:#外れた
+    #             self.p1_field[true_card]+=1
+    #             return -1
+    #         else:#当てた
+    #             self.p2_field[true_card]+=1
+    #             self.p2_hand[np.random.choice(np.where(self.p2_hand>0)[0])]-=1
+    #             return 1
+    #     self.miss = True
+    #     self.done = True
+    #     return 0
 
-    def step_offence(self, act):
-        call = np.random.randint(2)##0:嘘、1:本当
-        true_card = np.int(act/8) #
-        declaration_card = act%8 #
-        self.p1_hand[true_card] -= 1 # 手札を減らす
-        if call==1:
-            if true_card == declaration_card:#当てられた
-                self.p1_field[true_card]+=1
-                return -1
-            else:
-                self.p2_field[true_card]+=1
-                self.p2_hand[np.random.choice(np.where(self.p2_hand>0)[0])] -= 1
-                return 1
-        elif call==0:
-            if true_card == declaration_card:
-                self.p2_field[true_card]+=1
-                self.p2_hand[np.random.choice(np.where(self.p2_hand>0)[0])]-=1
-                return 1
-            else:#当てられた
-                self.p1_field[true_card]+=1
-                return -1
+    # def step_offence(self, act):
+    #     call = np.random.randint(2)##0:嘘、1:本当
+    #     true_card = np.int(act/8) #
+    #     declaration_card = act%8 #
+    #     self.p1_hand[true_card] -= 1 # 手札を減らす
+    #     if call==1:
+    #         if true_card == declaration_card:#当てられた
+    #             self.p1_field[true_card]+=1
+    #             return -1
+    #         else:
+    #             self.p2_field[true_card]+=1
+    #             self.p2_hand[np.random.choice(np.where(self.p2_hand>0)[0])] -= 1
+    #             return 1
+    #     elif call==0:
+    #         if true_card == declaration_card:
+    #             self.p2_field[true_card]+=1
+    #             self.p2_hand[np.random.choice(np.where(self.p2_hand>0)[0])]-=1
+    #             return 1
+    #         else:#当てられた
+    #             self.p1_field[true_card]+=1
+    #             return -1
         # return reward
+    def step_and_reward(self,off_act,def_act,turn,):
+        true_card = np.int(off_act/8) 
+        declaration_card = off_act%8 
+        self.hand[turn][true_card]-=1
+        if def_act==1:
+            if true_card == declaration_card:
+                self.field[turn][true_card]+=1
+                return -1 if turn == PLAYER1 else 1
+            else:
+                self.field[PLAYER2-turn][true_card]+=1
+                return 1 if turn == PLAYER1 else -1
+        elif def_act==0:
+            if true_card == declaration_card:
+                self.field[PLAYER2-turn][true_card]+=1
+                return 1 if turn == PLAYER1 else -1
+            else:
+                self.field[turn][true_card]+=1
+                return -1 if turn == PLAYER1 else 1
+
     def step(self,off_act,def_act,turn):
         is_turn_change = False
         true_card = np.int(off_act/8) 
         declaration_card = off_act%8 
         print("True:",true_card)
-        if turn == PLAYER1:
-            if def_act==1:
-                if true_card == declaration_card:#Player2が当てた
-                    self.p1_field[true_card]+=1
-                    is_turn_change=False
-                else:#外れた
-                    self.p2_field[true_card]+=1
-                    is_turn_change=True
-            elif def_act==0:
-                if true_card == declaration_card:#外れた
-                    self.p2_field[true_card]+=1
-                    is_turn_change=True
-                else:#当てた
-                    self.p1_field[true_card]+=1
-                    is_turn_change=False
-        elif turn == PLAYER2:
-            if def_act==1:
-                if true_card == declaration_card:#当てた
-                    self.p2_field[true_card]+=1
-                    is_turn_change=False
-                else:#外れた
-                    self.p1_field[true_card]+=1
-                    is_turn_change=True
-            elif def_act==0:
-                if true_card == declaration_card:#外れた
-                    self.p1_field[true_card]+=1
-                    is_turn_change=True
-                else:#当てた
-                    self.p2_field[true_card]+=1
-                    is_turn_change=False
+        self.hand[turn][true_card]-=1
+        if def_act==1:
+            if true_card == declaration_card:#Player2が当てた
+                self.field[turn][true_card]+=1
+                is_turn_change=False
+            else:#外れた
+                self.field[PLAYER2-turn][true_card]+=1
+                is_turn_change=True
+        elif def_act==0:
+            if true_card == declaration_card:#外れた
+                self.field[PLAYER2-turn][true_card]+=1
+                is_turn_change=True
+            else:#当てた
+                self.field[turn][true_card]+=1
+                is_turn_change=False
         return is_turn_change
 
     def get_env(self):
-        a1 = self.p1_hand.tolist()
-        a2 = self.p1_field.tolist()
-        a3 = GRAY_CODE[int(sum(self.p2_hand))]
-        a4 = self.p2_field.tolist()
+        a1 = self.hand[PLAYER1].tolist()
+        a2 = self.field[PLAYER1].tolist()
+        a3 = GRAY_CODE[int(sum(self.hand[PLAYER2]))]
+        a4 = self.field[PLAYER2].tolist()
         return np.array(a1+a2+a3+a4,dtype=np.float32)
     
     def check_winner(self):
         # player1 win condtion
-        if np.sum(self.p2_field>0)==8:
+        if np.sum(self.field[PLAYER2]>0)==8:
             self.winner=1
             self.done = True
-        if np.sum(self.p2_field>4):
+        if np.sum(self.field[PLAYER2]>4):
             self.winner=1
             self.done = True
-        if np.sum(self.p2_hand)==0:
+        if np.sum(self.hand[PLAYER2])==0:
             self.winner=1
+            self.done = True
+        if np.sum(self.hand[PLAYER2]<0):
+            self.winner=1
+            self.miss = True
             self.done = True
         # player2 win condition
-        if np.sum(self.p1_field>0)==8:
+        if np.sum(self.field[PLAYER1]>0)==8:
             self.winner=-1
             self.done = True
-        if np.sum(self.p1_field>4):
+        if np.sum(self.field[PLAYER1]>4):
             self.winner=-1
             self.done = True
-        if np.sum(self.p1_hand)==0:
+        if np.sum(self.hand[PLAYER1])==0:
             self.winner=-1
+            self.done = True
+        if np.sum(self.hand[PLAYER1]<0):
+            print("Illegal playing")
+            self.winner=-1
+            self.miss = True
             self.done = True
 
     def show(self):
-        print("player1's hand:",self.p1_hand)
-        print("player1's field:",self.p1_field)
-        print("player2's hand:",self.p2_hand)
-        print("player2's field:",self.p2_field)
+        print("player1's hand:",self.hand[PLAYER1])
+        print("player1's field:",self.field[PLAYER1])
+        print("player2's hand:",self.hand[PLAYER2])
+        print("player2's field:",self.field[PLAYER2])
     
     def show_vs_URAYAMA(self):
-        print("URAYAMA hand:",self.p1_hand)
-        print("URAYAMA field:",self.p1_field)
-        print("PLAYER hand:",self.p2_hand)
-        print("PLAYER field:",self.p2_field)
-        
+        print("URAYAMA hand:",self.hand[PLAYER1])
+        print("URAYAMA field:",self.field[PLAYER1])
+        print("PLAYER hand:",self.hand[PLAYER2])
+        print("PLAYER field:",self.field[PLAYER2])
+
 
 def main():
     kp = Kakerlakenpoker()
@@ -222,4 +230,5 @@ def main():
                 print("MISS")
         if is_turn_change : turn = PLAYER1 if turn == PLAYER2 else PLAYER2 #ターンの交換
         turn_count+=1
-main()
+if __name__ == "__main__":
+    main()

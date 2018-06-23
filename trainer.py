@@ -6,6 +6,9 @@ from functions import *
 import random
 import players
 import kakerlakenpoker
+import time
+N_INFO=100
+USE_GPU=True
 
 def train_offence():
     # ゲームボードの準備
@@ -19,10 +22,10 @@ def train_offence():
     n_episodes = 3000
     #カウンタの宣言
     win = 0
-    miss = 0
+    miss =0
     # Q-functionとオプティマイザーのセットアップ
     q_func = qf.QFunction(obs_size, n_actions)
-    # q_func.to_gpu(0)
+    if USE_GPU : q_func.to_gpu(0)
     optimizer = chainer.optimizers.Adam(eps=1e-2)
     optimizer.setup(q_func)
     # 報酬の割引率
@@ -43,8 +46,9 @@ def train_offence():
         reward_avg=0
         turn = 0
         while not kp.done:
-            action = agent_p1.act_and_train(kp.get_env().copy(),reward)
-            tmp_r = kp.step_offence(action)
+            off_act = agent_p1.act_and_train(kp.get_env().copy(),reward)
+            def_act = p2_rndact.random_defence_action_func()
+            tmp_r = kp.step_and_reward(off_act,def_act,PLAYER1)
             reward += tmp_r
             kp.check_winner()
             if kp.done is True:
@@ -64,10 +68,11 @@ def train_offence():
                 last_state = kp.get_env().copy()
                 turn +=1
         reward_avg += reward
-        if i % 100 == 0:
+        if i % N_INFO == 0:
             print("***Episodes",i,"***")
             print("win:",win)
-            print("reward avg:",reward_avg/100)
+            print("miss",miss)
+            print("reward avg:",reward_avg/N_INFO)
             print("rnd:",p1_rndact.random_count)
             win=0
             reward_avg = 0
@@ -90,7 +95,7 @@ def train_defence():
     miss = 0
     # Q-functionとオプティマイザーのセットアップ
     q_func = qf.QFunction(obs_size, n_actions)
-    # q_func.to_gpu(0)
+    if USE_GPU : q_func.to_gpu(0)
     optimizer = chainer.optimizers.Adam(eps=1e-2)
     optimizer.setup(q_func)
     # 報酬の割引率
@@ -104,7 +109,7 @@ def train_defence():
         q_func, optimizer, replay_buffer, gamma, p1_explorer,
         replay_start_size=500,
         target_update_interval=100)
-
+    t1 = time.time()
     for i in range(1,n_episodes+1):
         kp.reset()
         reward = 0
@@ -116,7 +121,7 @@ def train_defence():
             off_act_vec[off_act%8]=1
             env = np.append(kp.get_env().copy(),off_act_vec)
             def_act = agent_p1.act_and_train(env.copy(),reward)
-            reward += kp.step_defence(off_act,def_act)
+            reward += kp.step_and_reward(off_act,def_act,PLAYER2)
             kp.check_winner()
             if kp.done is True:
                 if kp.winner == 1:
@@ -135,16 +140,22 @@ def train_defence():
                 last_state = kp.get_env().copy()
                 turn +=1
         reward_avg += reward
-        if i % 100 == 0:
+        if i % N_INFO == 0:
             print("***Episodes",i,"***")
             print("win:",win)
-            print("reward avg:",reward_avg/100)
+            print("miss",miss)
+            print("reward avg:",reward_avg/N_INFO)
             print("rnd:",p1_rndact.random_count)
             win=0
             reward_avg = 0
             miss=0
             p1_rndact.random_count=0
+            t2 = time.time()
+            print("time:"+str(t2-t1))
+            t1 = time.time()
     agent_p1.save("defence_model3000")
+
+
 
 # train_offence()
 train_defence()

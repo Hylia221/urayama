@@ -1,3 +1,4 @@
+from enum import Enum
 def int2bin(n):
     '''
     自然数 n を2進数（バイナリコード）に変換します．
@@ -16,8 +17,11 @@ def bin2gray(bits):
     バイナリコードをグレイコードに変換します．
     '''
     return bits[:1] + [i ^ ishift for i, ishift in zip(bits[:-1], bits[1:])]
+
 PLAYER1 = 0
 PLAYER2 = 1
+
+
 GRAY_CODE=[
 [0, 0, 0, 0, 0, 0, 0, 0],
 [0, 0, 0, 0, 0, 0, 0, 1],
